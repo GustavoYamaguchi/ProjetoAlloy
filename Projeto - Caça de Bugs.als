@@ -19,10 +19,6 @@ one sig Grupo{
 	
 }
 
-sig Relatorio{
-	
-}
-
 sig Bug{}
 
 sig Empresa{
@@ -43,7 +39,7 @@ sig Repositorio{
 }
 
 sig CodigoFonte{
-		erro: Bug lone -> Time
+		erros: set Bug  -> Time
 }
 
 sig Cliente{
@@ -61,6 +57,8 @@ sig Pasta{
 sig Subpasta{
 	codigosfonte: one CodigoFonte
 }
+
+
 
 
 // FATOS
@@ -85,15 +83,17 @@ fact EstruturaDoSistema{
 
 	--  Todo empresa so tem apenas um grupo
 	one e:Empresa| one g:Grupo|  g in e.grupoCacaBug
-	
-	-- Todo grupo tem pelo menos um funcinario
---	one g:Grupo | all f:Funcionario | one t:Time| f in g.funcionarios.t
 
 	-- Todo funcionario tem que ta ligado a uma empresa
 	all f:Funcionario | one e:Empresa | f in e.funcionarios	
 
-	--Todo bug esta ligado a um codigo fonte
+	--Qualquer bug esta em algum codigo fonte, 
+	--e não estar em outro codigo fonte no mesmo instate de tempo
+	all b:Bug | some c:CodigoFonte | all c1:CodigoFonte| all t:Time |
+	b in c.erros.t && 	b not in (c1-c).erros.t
 	
+	--Um grupo so pode pegar codigo fonte com bug
+	all g:Grupo | all t:Time| #(g.codigoFonteAnalisado.t).erros.t > 0
 
 	//todos os clientes tem que estar ligado ao repositorio
 	all p:Projeto | one p.~projetos
