@@ -16,7 +16,14 @@ sig Time{}
 */
 one sig Grupo{
 	codigoFonteAnalisado: CodigoFonte one -> Time
+	
 }
+
+sig Relatorio{
+	
+}
+
+sig Bug{}
 
 sig Empresa{
 	funcionarios: set Funcionario,
@@ -35,7 +42,9 @@ sig Repositorio{
 	clientes: set Cliente
 }
 
-sig CodigoFonte{}
+sig CodigoFonte{
+		erro: Bug lone -> Time
+}
 
 sig Cliente{
 	projetos: set Projeto
@@ -52,9 +61,6 @@ sig Pasta{
 sig Subpasta{
 	codigosfonte: one CodigoFonte
 }
-
-//abstract sig Bug{}
-//lone sig Um, Dois, Tres extends Bug {}
 
 
 // FATOS
@@ -85,6 +91,9 @@ fact EstruturaDoSistema{
 
 	-- Todo funcionario tem que ta ligado a uma empresa
 	all f:Funcionario | one e:Empresa | f in e.funcionarios	
+
+	--Todo bug esta ligado a um codigo fonte
+	
 
 	//todos os clientes tem que estar ligado ao repositorio
 	all p:Projeto | one p.~projetos
