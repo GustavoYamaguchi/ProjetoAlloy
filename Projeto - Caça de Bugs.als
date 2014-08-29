@@ -1,11 +1,33 @@
+/*
+*Importando a library ordering. Em seguida, aplicando à assinatura Time.
+*/
+open util/ordering [Time]
+
 module cacabugs
 
-sig Empresa{
-	repositorio: one Repositorio,
-	cacadores: set Funcionario
+/*
+*Assinatura para simular tempo, cada tempo é 
+*referente a um dia diferente
+*/
+sig Time{}
+
+/*
+* Grupo é o time de funcionarios que caçam bugs.
+*/
+one sig Grupo{
+	codigoFonteAnalisado: CodigoFonte one -> Time
 }
 
-sig Funcionario extends Pessoa{}
+sig Empresa{
+	funcionarios: set Funcionario,
+	repositorio: one Repositorio,
+	grupoCacaBug: Grupo
+}
+
+sig Funcionario extends Pessoa{
+	-- Toda instancia de funcionario é um membro de um grupo
+	membro:  Grupo one -> Time
+}
 
 sig Pessoa{}
 
@@ -31,10 +53,15 @@ sig Subpasta{
 	codigosfonte: one CodigoFonte
 }
 
-fact Sistema{
+//abstract sig Bug{}
+//lone sig Um, Dois, Tres extends Bug {}
+
+
+// FATOS
+fact EstruturaDoSistema{
 	--Todo Projeto Fonte Tem Um Cliente
 	all p:Projeto| some c:Cliente| p in c.projetos
-	
+
 	-- Toda pasta tem um unico projeto
 	all p:Pasta | one p2:Projeto | p in p2.pastas
 
@@ -50,20 +77,27 @@ fact Sistema{
 	--Toda subpasta tem apenas um codigo fonte
 	all c:CodigoFonte | one s:Subpasta |  c in s.codigosfonte
 
-	-- Todo funcionario esta em apenas uma empresa
-	all f:Funcionario | one e:Empresa | f in e.cacadores
+	--  Todo empresa so tem apenas um grupo
+	one e:Empresa| one g:Grupo|  g in e.grupoCacaBug
+	
+	-- Todo grupo tem pelo menos um funcinario
+--	one g:Grupo | all f:Funcionario | one t:Time| f in g.funcionarios.t
 
-	-- Toda empresa tem pelo menos um funcinario
-	all e:Empresa | some f:Funcionario | f in e.cacadores
-}
+	-- Todo funcionario tem que ta ligado a uma empresa
+	all f:Funcionario | one e:Empresa | f in e.funcionarios	
 
-fact fato1{
 	//todos os clientes tem que estar ligado ao repositorio
 	all p:Projeto | one p.~projetos
 	all c: Cliente | one c.~clientes
 	all c: Cliente | some c.projetos
-	#Empresa = 1
-	#Repositorio = 1
 }
 
-run{} for 3 but   exactly  3 Subpasta
+
+fact fato1{
+	
+	#Empresa = 1
+	#Repositorio = 1
+	#Funcionario=3
+}
+
+run{} for 3 but  exactly  2 Subpasta
