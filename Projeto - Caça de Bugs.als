@@ -58,11 +58,6 @@ sig Subpasta{
 	codigosfonte: one CodigoFonte
 }
 
-abstract sig Event{
-	t, t': Time,
-	g: Grupo,
-	c: CodigoFonte	
-}
 
 pred setCodigo[c:CodigoFonte, g:Grupo, t,t': Time] {
 	c = g.codigoFonteAnalisado.t
