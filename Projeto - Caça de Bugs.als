@@ -58,7 +58,27 @@ sig Subpasta{
 	codigosfonte: one CodigoFonte
 }
 
+abstract sig Event{
+	t, t': Time,
+	g: Grupo,
+	c: CodigoFonte	
+}
 
+pred setCodigo[c:CodigoFonte, g:Grupo, t,t': Time] {
+	c = g.codigoFonteAnalisado.t
+	g.codigoFonteAnalisado.t' != c
+}
+
+pred init [t:Time] {
+
+}
+
+fact traces {
+	init [first]
+ 	all pre: Time-last | let pos = pre.next |
+ 		some c: CodigoFonte, g: Grupo |	
+ 		setCodigo[c,g,pre,pos]
+}
 
 
 // FATOS
@@ -88,9 +108,12 @@ fact EstruturaDoSistema{
 	all f:Funcionario | one e:Empresa | f in e.funcionarios	
 
 	--Qualquer bug esta em algum codigo fonte, 
-	--e não estar em outro codigo fonte no mesmo instate de tempo
+	--e não estar em outro codigo fonte no mesmo instante de tempo
 	all b:Bug | some c:CodigoFonte | all c1:CodigoFonte| all t:Time |
 	b in c.erros.t && 	b not in (c1-c).erros.t
+
+	--Um grupo não pode vasculhar o mesmo codigo durante dois dias
+	
 	
 	--Um grupo so pode pegar codigo fonte com bug
 	all g:Grupo | all t:Time| #(g.codigoFonteAnalisado.t).erros.t > 0
