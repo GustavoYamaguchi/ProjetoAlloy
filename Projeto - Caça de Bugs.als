@@ -19,7 +19,9 @@ one sig Grupo{
 	
 }
 
-sig Bug{}
+sig Bug{
+	situacaoDoBug: StatusDoBug one -> Time
+}
 
 sig Empresa{
 	funcionarios: set Funcionario,
@@ -39,7 +41,8 @@ sig Repositorio{
 }
 
 sig CodigoFonte{
-		erros: set Bug  -> Time
+	erros: set Bug  -> Time,
+	versao: VersaoDoCodigo one -> Time
 }
 
 sig Cliente{
@@ -58,15 +61,20 @@ sig Subpasta{
 	codigosfonte: one CodigoFonte
 }
 
+abstract sig StatusDoBug{}
+one sig Nivel1, Nivel2, Nivel3 extends StatusDoBug{}
+
+
+abstract sig VersaoDoCodigo{}
+ sig Atual, Antiga extends VersaoDoCodigo{}
+
 
 pred setCodigo[c:CodigoFonte, g:Grupo, t,t': Time] {
 	c = g.codigoFonteAnalisado.t
 	g.codigoFonteAnalisado.t' != c
 }
 
-pred init [t:Time] {
-
-}
+pred init [t:Time] {}
 
 fact traces {
 	init [first]
@@ -113,6 +121,17 @@ fact EstruturaDoSistema{
 	--Um grupo so pode pegar codigo fonte com bug
 	all g:Grupo | all t:Time| #(g.codigoFonteAnalisado.t).erros.t > 0
 
+	--Todo nivel deve estar vinculado a um bug
+	--	all s:StatusDoBug | all b:Bug | all t:Time | !(s not in b.situacaoDoBug.t)
+
+
+	-- Todo projo so pode ter uma versao atual do codigo
+	 all p:Projeto |all t:Time|one s:Subpasta | one c:CodigoFonte| 
+	((s in p.pastas.subpastas)  and (c in s.codigosfonte)) and (c.versao.t == Atual)
+
+	-- Todo versao deve esta ligada a um codigo
+--	all v:VersaoDoCodigo | all c:CodigoFonte| all t:Time| v in c.versao.t
+
 	//todos os clientes tem que estar ligado ao repositorio
 	all p:Projeto | one p.~projetos
 	all c: Cliente | one c.~clientes
@@ -125,6 +144,8 @@ fact fato1{
 	#Empresa = 1
 	#Repositorio = 1
 	#Funcionario=3
+	#Subpasta = 3
+	#Projeto =  1
 }
 
-run{} for 3 but  exactly  2 Subpasta
+run{} for 3 but  exactly  3 Bug
