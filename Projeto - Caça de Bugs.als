@@ -5,6 +5,9 @@ open util/ordering [Time]
 
 module cacabugs
 
+
+/**ASSINATURAS*/
+
 /*
 *Assinatura para simular tempo, cada tempo é 
 *referente a um dia diferente
@@ -15,8 +18,8 @@ sig Time{}
 * Grupo é o time de funcionarios que caçam bugs.
 */
 one sig Grupo{
-	codigoFonteAnalisado: CodigoFonte one -> Time
-	
+	codigoFonteAnalisado: CodigoFonte one -> Time,
+	prestaServico: Cliente one -> Time
 }
 
 sig Bug{
@@ -66,25 +69,68 @@ one sig Nivel1, Nivel2, Nivel3 extends StatusDoBug{}
 
 
 abstract sig VersaoDoCodigo{}
- sig Atual, Antiga extends VersaoDoCodigo{}
+sig Atual, Antiga extends VersaoDoCodigo{}
 
 
-pred setCodigo[c:CodigoFonte, g:Grupo, t,t': Time] {
-	c = g.codigoFonteAnalisado.t
-	g.codigoFonteAnalisado.t' != c
+
+/**FUNCOES*/
+
+-- Retorna o cliente ao qual o grupo esta prestando servico
+fun getClienteByGrupo[g:Grupo, t:Time]: Cliente{
+	g.prestaServico.t
+}
+
+-- Retorna o codigo fonte que esta sendo analisado pelo grupo
+fun getCodigoByGrupo[g:Grupo, t:Time]: CodigoFonte{
+	g.codigoFonteAnalisado.t
+}
+
+-- Retorna os codigos fontes de todas as subpastas de todos os projetos de um cliente
+fun getAllCodigosByCliente[c:Cliente]: CodigoFonte{
+	c.projetos.pastas.subpastas.codigosfonte
+}
+
+-- Retorna o cliente que eh dono do codigo passado como paramentro
+fun getClienteByCodigo[c:CodigoFonte]: Cliente{
+	c.~codigosfonte.~subpastas.~pastas.~projetos
+}
+
+/**PREDICADOS*/
+
+
+--Garante que um grupo nao vai passar mais de um dia seguido analisando o codigo do mesmo cliente
+pred setCliente[cliente:Cliente, g:Grupo, t,t': Time] {
+	
+	-- Pega o cliente que ta sendo analisado pelo grupo em um tempo t
+		getClienteByGrupo[g,t] != getClienteByGrupo[g,t']
+
+	-- Pega o codigo fonte de um cliente em um tempo t e compara com o codigo fonte de um grupo em um mesmo instante de tempo
+		getClienteByGrupo[g,t] == getClienteByCodigo[getCodigoByGrupo[g,t]] 
+
+	-- Pega o codigo fonte de um cliente em um tempo t e compara com o codigo fonte de um grupo em um mesmo instante de tempo
+		getClienteByGrupo[g,t']== getClienteByCodigo[getCodigoByGrupo[g,t']] 
+
+	-- Verifica se o codigo fonte analisado pelo grupo é a versao mais atual no tempo t
+		getCodigoByGrupo[g,t].versao.t == Atual
+
+	-- Verifica se o codigo fonte analisado pelo grupo é a versao mais atual no tempo t'
+		getCodigoByGrupo[g,t'].versao.t' == Atual
 }
 
 pred init [t:Time] {}
 
 fact traces {
 	init [first]
- 	all pre: Time-last | let pos = pre.next |
- 		some c: CodigoFonte, g: Grupo |	
- 		setCodigo[c,g,pre,pos]
+ 	all cliente: Cliente |all pre: Time-last | let pos = pre.next |
+ 		some g: Grupo |	
+ 		setCliente[cliente,g,pre,pos]
 }
 
 
-// FATOS
+
+
+
+/**FATOS*/
 fact EstruturaDoSistema{
 	--Todo Projeto Fonte Tem Um Cliente
 	all p:Projeto| some c:Cliente| p in c.projetos
@@ -113,10 +159,7 @@ fact EstruturaDoSistema{
 	--Qualquer bug esta em algum codigo fonte, 
 	--e não estar em outro codigo fonte no mesmo instante de tempo
 	all b:Bug | some c:CodigoFonte | all c1:CodigoFonte| all t:Time |
-	b in c.erros.t && 	b not in (c1-c).erros.t
-
-	--Um grupo não pode vasculhar o mesmo codigo durante dois dias
-	
+	b in c.erros.t && 	b not in (c1-c).erros.t	
 	
 	--Um grupo so pode pegar codigo fonte com bug
 	all g:Grupo | all t:Time| #(g.codigoFonteAnalisado.t).erros.t > 0
@@ -129,8 +172,6 @@ fact EstruturaDoSistema{
 	 all p:Projeto |all t:Time|one s:Subpasta | one c:CodigoFonte| 
 	((s in p.pastas.subpastas)  and (c in s.codigosfonte)) and (c.versao.t == Atual)
 
-	-- Todo versao deve esta ligada a um codigo
---	all v:VersaoDoCodigo | all c:CodigoFonte| all t:Time| v in c.versao.t
 
 	//todos os clientes tem que estar ligado ao repositorio
 	all p:Projeto | one p.~projetos
@@ -145,7 +186,8 @@ fact fato1{
 	#Repositorio = 1
 	#Funcionario=3
 	#Subpasta = 3
-	#Projeto =  1
+	#Cliente = 2
+
 }
 
 run{} for 3 but  exactly  3 Bug
