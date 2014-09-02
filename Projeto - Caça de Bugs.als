@@ -53,7 +53,8 @@ sig Cliente{
 }
 
 sig Projeto{
-	pastas: set Pasta
+	pastas: set Pasta,
+	statusProjeto: StatusProjeto one -> Time
 }
 
 sig Pasta{
@@ -67,6 +68,8 @@ sig Subpasta{
 abstract sig StatusDoBug{}
 one sig Nivel1, Nivel2, Nivel3 extends StatusDoBug{}
 
+abstract sig StatusProjeto{}
+ sig Apto, Inapto extends StatusProjeto{}
 
 abstract sig VersaoDoCodigo{}
 sig Atual, Antiga extends VersaoDoCodigo{}
@@ -86,13 +89,18 @@ fun getCodigoByGrupo[g:Grupo, t:Time]: CodigoFonte{
 }
 
 -- Retorna os codigos fontes de todas as subpastas de todos os projetos de um cliente
-fun getAllCodigosByCliente[c:Cliente]: CodigoFonte{
-	c.projetos.pastas.subpastas.codigosfonte
-}
+--fun getAllCodigosByCliente[c:Cliente]: CodigoFonte{
+--	c.projetos.pastas.subpastas.codigosfonte
+--}
 
 -- Retorna o cliente que eh dono do codigo passado como paramentro
 fun getClienteByCodigo[c:CodigoFonte]: Cliente{
 	c.~codigosfonte.~subpastas.~pastas.~projetos
+}
+
+-- Retorna o projeto na qual o codigo esta contido
+fun getProjetoByCodigo[c:CodigoFonte]: Projeto{
+	c.~codigosfonte.~subpastas.~pastas
 }
 
 /**PREDICADOS*/
@@ -117,7 +125,30 @@ pred setCliente[cliente:Cliente, g:Grupo, t,t': Time] {
 		getCodigoByGrupo[g,t'].versao.t' == Atual
 }
 
+-- Garante que se um projeto tem bug seu status sera Inapto e caso contrario sera Apto
+pred setStatusProjeto[bug:Bug, codigo:CodigoFonte,  t:Time]{
+		
+		-- Garante que o codigo fonte eh a versão mais atual
+		codigo.versao.t == Atual
+
+		-- Se existir um erro no código implica dizer o projeto na qual esta cotido o bug esta inapto
+		bug in codigo.erros.t => (getProjetoByCodigo[codigo].statusProjeto.t==Inapto)
+
+		-- Se nao existir um erro no código implica dizer o projeto na qual o codigo esta cotido esta Apto
+		(#codigo.erros.t == 0) =>  (getProjetoByCodigo[codigo].statusProjeto.t==Apto)
+
+	-- Todo status de projeto deve esta ligado a um projeto
+	
+}
+
 pred init [t:Time] {}
+
+fact tracesProjetoStatus{
+	init [first]
+ 	all codigo:CodigoFonte |all pre: Time-last | let pos = pre.next |
+ 		all bug: Bug |	
+ 		setStatusProjeto[bug,codigo,pos]
+}
 
 fact traces {
 	init [first]
