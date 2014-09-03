@@ -129,10 +129,34 @@ pred setCliente[cliente:Cliente, g:Grupo, t,t': Time] {
 
 pred init [t:Time] {}
 
+pred corrigeBugs[bug:Bug,grupo: Grupo, t, t': Time]{
+	-- Todo codigo que esta sendo analisado por um grupo, no primeiro instante tem um ou mais erros
+--	bug in grupo.codigoFonteAnalisado.t.erros.t
+--	grupo.codigoFonteAnalisado.t'.erros.t' = (grupo.codigoFonteAnalisado.t.erros.t) - bug
 
+	--Verifica que o bug esta no codigo
+--	bug in getCodigoByGrupo[grupo,t].erros.t
+	-- Para o tempo t' esse bug nao deve estar mais no codigo analisado no tempo t
+--	bug not in getCodigoByGrupo[grupo,t].erros.t'
+
+	--Garante que um codigo que esta sendo analisado por um grupo em um instante t vai possuir erros
+--	(#getCodigoByGrupo[grupo,t].erros.t > 0)	
+	-- O codigo que foi analisado por um grupo num tempo t, o seu conjunto de erros no tempo seguinte vai ter tamanho 0
+--	(#getCodigoByGrupo[grupo,t].erros.t' = 0)
+	
+	--O conjunto de erros do codigo analisado pelo grupo no tempo t eh retirado no tempo t' 
+--	c.erros.t = getCodigoByGrupo[grupo,t].erros.t
+--	getCodigoByGrupo[grupo,t].erros.t' = getCodigoByGrupo[grupo,t].erros.t - c.erros.t
+}
 
 
 /**FATOS*/
+
+fact tracesProjetoStatus{
+	init [first]
+ 	all codigo:CodigoFonte | all bug: Bug |all pre: Time-last | let pos = pre.next |	
+ 		setStatusProjeto[bug,codigo,pos]
+}
 
 fact traces {
 	init [first]
@@ -140,7 +164,6 @@ fact traces {
  		some g: Grupo |	
  		setCliente[cliente,g,pre,pos]
 }
-
 
 fact EstruturaDoSistema{
 	--Todo Projeto Fonte Tem Um Cliente
@@ -198,7 +221,6 @@ fact EstruturaDoSistema{
 	
 }
 
-
 fact fato1{
 	
 	#Empresa = 1
@@ -206,5 +228,34 @@ fact fato1{
 	#Funcionario=3
 
 }
+
+
+
+/*ASSERTS*/
+
+assert temApenasUmRepositorio{
+	all e:Empresa |
+	#e.repositorio == 1
+}
+
+assert cadaBugEstaLigadoAUmUnicoCodigoFonte{
+	all b:Bug, c:CodigoFonte, t:Time | b in c.erros.t
+}
+
+assert todaPastaTemSubpasta{
+	all p:Pasta,s:Subpasta | s in p.subpastas
+}
+
+assert oCodigoFonteAnalisadoEhOAtual{
+	all t:Time, g:Grupo|one a:Atual| 
+	g.codigoFonteAnalisado.t.versao.t == a
+}
+
+
+/*CHECKS*/
+check temApenasUmRepositorio for 10
+check cadaBugEstaLigadoAUmUnicoCodigoFonte for 10
+check todaPastaTemSubpasta for 10
+check oCodigoFonteAnalisadoEhOAtual for 10
 
 run{} for 3
