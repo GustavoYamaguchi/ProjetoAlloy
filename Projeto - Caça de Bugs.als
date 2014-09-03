@@ -103,6 +103,8 @@ fun getProjetoByCodigo[c:CodigoFonte]: Projeto{
 	c.~codigosfonte.~subpastas.~pastas
 }
 
+
+
 /**PREDICADOS*/
 
 
@@ -125,30 +127,12 @@ pred setCliente[cliente:Cliente, g:Grupo, t,t': Time] {
 		getCodigoByGrupo[g,t'].versao.t' == Atual
 }
 
--- Garante que se um projeto tem bug seu status sera Inapto e caso contrario sera Apto
-pred setStatusProjeto[bug:Bug, codigo:CodigoFonte,  t:Time]{
-		
-		-- Garante que o codigo fonte eh a versão mais atual
-		codigo.versao.t == Atual
-
-		-- Se existir um erro no código implica dizer o projeto na qual esta cotido o bug esta inapto
-		bug in codigo.erros.t => (getProjetoByCodigo[codigo].statusProjeto.t==Inapto)
-
-		-- Se nao existir um erro no código implica dizer o projeto na qual o codigo esta cotido esta Apto
-		(#codigo.erros.t == 0) =>  (getProjetoByCodigo[codigo].statusProjeto.t==Apto)
-
-	-- Todo status de projeto deve esta ligado a um projeto
-	
-}
-
 pred init [t:Time] {}
 
-fact tracesProjetoStatus{
-	init [first]
- 	all codigo:CodigoFonte |all pre: Time-last | let pos = pre.next |
- 		all bug: Bug |	
- 		setStatusProjeto[bug,codigo,pos]
-}
+
+
+
+/**FATOS*/
 
 fact traces {
 	init [first]
@@ -158,10 +142,6 @@ fact traces {
 }
 
 
-
-
-
-/**FATOS*/
 fact EstruturaDoSistema{
 	--Todo Projeto Fonte Tem Um Cliente
 	all p:Projeto| some c:Cliente| p in c.projetos
@@ -208,6 +188,14 @@ fact EstruturaDoSistema{
 	all p:Projeto | one p.~projetos
 	all c: Cliente | one c.~clientes
 	all c: Cliente | some c.projetos
+
+	-- Garante que se um projeto tem bug seu status sera Inapto e caso contrario sera Apto
+	-- Se existir um erro no código implica dizer o projeto na qual esta cotido o bug esta inapto
+	all codigo:CodigoFonte| all t:Time | (#codigo.erros.t >0) => (getProjetoByCodigo[codigo].statusProjeto.t==Inapto)
+	-- Se nao existir um erro no código implica dizer o projeto na qual o codigo esta cotido esta Apto
+	all codigo:CodigoFonte| all t:Time | (#codigo.erros.t == 0) =>  (getProjetoByCodigo[codigo].statusProjeto.t==Apto)
+
+	
 }
 
 
@@ -216,9 +204,7 @@ fact fato1{
 	#Empresa = 1
 	#Repositorio = 1
 	#Funcionario=3
-	#Subpasta = 3
-	#Cliente = 2
 
 }
 
-run{} for 3 but  exactly  3 Bug
+run{} for 3
