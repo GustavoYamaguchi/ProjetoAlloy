@@ -108,6 +108,28 @@ fun getProjetoByCodigo[c:CodigoFonte]: Projeto{
 /**PREDICADOS*/
 
 
+
+	--Todo Projeto Fonte Tem Um Cliente
+pred TodoProjetoFonteTemUmCliente{
+	all p:Projeto| some c:Cliente| p in c.projetos
+}
+
+	-- Toda pasta tem um unico projeto
+pred TodaPastaTemUmUnicoProjeto{
+	all p:Pasta | one p2:Projeto | p in p2.pastas
+}
+
+	-- Todo projeto tem uma unica pasta
+pred TodoProjetoTemUmaUnicaPasta{
+	all p:Projeto| one p2:Pasta | p2 in p.pastas
+}
+
+	-- Toda pasta tem um ou mais subpastas
+pred TodaPastaTemUmOuMaisSubpastas{
+	all p:Pasta | some s:Subpasta | s in p.subpastas
+}
+
+
 --Garante que um grupo nao vai passar mais de um dia seguido analisando o codigo do mesmo cliente
 pred setCliente[cliente:Cliente, g:Grupo, t,t': Time] {
 	
@@ -152,11 +174,12 @@ pred corrigeBugs[bug:Bug,grupo: Grupo, t, t': Time]{
 
 /**FATOS*/
 
-fact tracesProjetoStatus{
+--Corrige Bugs do codigo que esta sendo analisado
+/*fact tracesCorrigeBugs{
 	init [first]
- 	all codigo:CodigoFonte | all bug: Bug |all pre: Time-last | let pos = pre.next |	
- 		setStatusProjeto[bug,codigo,pos]
-}
+	all pre: Time-last | let pos = pre.next |some grupo: Grupo| some bug:Bug|
+ 		corrigeBugs[bug,grupo,pre,pos]
+}*/
 
 fact traces {
 	init [first]
@@ -166,17 +189,13 @@ fact traces {
 }
 
 fact EstruturaDoSistema{
-	--Todo Projeto Fonte Tem Um Cliente
-	all p:Projeto| some c:Cliente| p in c.projetos
+	TodoProjetoFonteTemUmCliente
 
-	-- Toda pasta tem um unico projeto
-	all p:Pasta | one p2:Projeto | p in p2.pastas
+	TodaPastaTemUmUnicoProjeto
 
-	-- Todo projeto tem uma unica pasta
-	all p:Projeto| one p2:Pasta | p2 in p.pastas
+	TodoProjetoTemUmaUnicaPasta
 
-	-- Toda pasta tem um ou mais subpastas
-	all p:Pasta | some s:Subpasta | s in p.subpastas
+	TodaPastaTemUmOuMaisSubpastas
 
 	-- Toda subpasta tem apenas uma pasta 
 	all s:Subpasta | one p:Pasta | s in p.subpastas
